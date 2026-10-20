@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import os
 import secrets
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .pipeline import PharmaGenePipeline
 from .schemas import PGxReport
+
+WEB_DIR = Path(__file__).parent / "web"
 
 
 class RecommendRequest(BaseModel):
@@ -45,6 +50,22 @@ def create_app(pipeline: PharmaGenePipeline | None = None) -> FastAPI:
             "auth": "api-key" if keys else "open (set PHARMAGENE_API_KEYS)",
         }
 
+    @app.get("/meta")
+    def meta() -> dict:
+        lex = pipeline.lexicon
+        return {
+            "drugs": [{"name": n, "genes": d.genes, "aliases": d.aliases} for n, d in lex.drugs.items()],
+            "genes": [
+                {"symbol": s, "alleles": list(g.alleles), "phenotypes": g.phenotypes}
+                for s, g in lex.genes.items()
+            ],
+            "reranker": pipeline.reranker_available(),
+        }
+
+    @app.get("/", include_in_schema=False)
+    def index() -> FileResponse:
+        return FileResponse(WEB_DIR / "index.html")
+
     @app.post("/recommend", response_model=PGxReport, dependencies=[Depends(require_key)])
     def recommend(req: RecommendRequest) -> PGxReport:
         cfg = pipeline.default_config(mode=req.mode, rerank=req.rerank, use_kg=req.use_kg)
@@ -55,4 +76,5 @@ def create_app(pipeline: PharmaGenePipeline | None = None) -> FastAPI:
         cfg = pipeline.default_config(mode=req.mode, rerank=req.rerank, use_kg=req.use_kg)
         return pipeline.ask(req.text, cfg)
 
+    app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
     return app

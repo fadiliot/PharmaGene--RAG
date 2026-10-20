@@ -70,6 +70,17 @@ pip install -e ".[local]"          # sentence-transformers + faiss-cpu (embeddin
 # in .env: PHARMAGENE_LLM=ollama  OLLAMA_MODEL=llama3.1  PHARMAGENE_EMBEDDINGS=sbert  VECTOR_BACKEND=faiss
 ```
 
+## Web UI
+
+```bash
+pharmagene serve          # then open http://127.0.0.1:8000
+```
+
+A dependency-free frontend (`src/pharmagene/web/`) served by the FastAPI app: free-text and structured
+queries, per-drug cards with action, phenotype, clickable citations, evidence, confidence breakdown against
+the abstention threshold, and clear abstain / clinician-review states. No CDN or external fonts, so it works
+air-gapped.
+
 ## Commands
 
 | Command | Purpose |
