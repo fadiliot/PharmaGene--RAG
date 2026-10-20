@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import secrets
 from pathlib import Path
@@ -9,10 +10,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from .config import ROOT
 from .pipeline import PharmaGenePipeline
 from .schemas import PGxReport
 
 WEB_DIR = Path(__file__).parent / "web"
+RESULTS_DIR = ROOT / "results"
+SCENARIOS = ROOT / "data" / "eval" / "scenarios.jsonl"
 
 
 class RecommendRequest(BaseModel):
@@ -29,6 +33,10 @@ class AskRequest(BaseModel):
     mode: str = "hybrid"
     rerank: bool = False
     use_kg: bool = True
+
+
+class TraceRequest(AskRequest):
+    pass
 
 
 def create_app(pipeline: PharmaGenePipeline | None = None) -> FastAPI:
@@ -61,6 +69,47 @@ def create_app(pipeline: PharmaGenePipeline | None = None) -> FastAPI:
             ],
             "reranker": pipeline.reranker_available(),
         }
+
+    @app.get("/graph", dependencies=[Depends(require_key)])
+    def graph(chunks: bool = False) -> dict:
+        return pipeline.graph.view(include_chunks=chunks)
+
+    @app.get("/corpus", dependencies=[Depends(require_key)])
+    def corpus() -> list[dict]:
+        return [{"id": c.id, "text": c.text, "metadata": c.metadata} for c in pipeline.chunks]
+
+    @app.post("/trace", dependencies=[Depends(require_key)])
+    def trace(req: TraceRequest) -> dict:
+        cfg = pipeline.default_config(mode=req.mode, rerank=req.rerank, use_kg=req.use_kg)
+        return pipeline.trace(req.text, cfg)
+
+    @app.get("/results", dependencies=[Depends(require_key)])
+    def results() -> dict:
+        out = {}
+        for name in ("retrieval", "e2e", "calibration"):
+            path = RESULTS_DIR / f"{name}.json"
+            if path.exists():
+                out[name] = json.loads(path.read_text(encoding="utf-8"))
+        return out
+
+    @app.post("/eval/retrieval", dependencies=[Depends(require_key)])
+    def run_retrieval_eval() -> dict:
+        """Retrieval ablation runs in milliseconds with local embedders; end-to-end eval stays a CLI job."""
+        from .evaluation import build_scenarios, load_scenarios, save_scenarios
+        from .evaluation.runner import run_retrieval_ablation, write_json
+
+        if SCENARIOS.exists():
+            scenarios = load_scenarios(SCENARIOS)
+        else:
+            scenarios = build_scenarios(pipeline)
+            save_scenarios(scenarios, SCENARIOS)
+        payload = {
+            "embedder": pipeline.retriever.embedder.name,
+            "n_scenarios": len(scenarios),
+            "rows": run_retrieval_ablation(pipeline, scenarios),
+        }
+        write_json(payload, RESULTS_DIR / "retrieval.json")
+        return payload
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:

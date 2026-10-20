@@ -108,6 +108,83 @@ class PharmaGenePipeline:
         rec.latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         return rec
 
+    def _select_gene(self, drug: str, genotypes: dict[str, str], bare: str | None) -> tuple[str, str] | None:
+        genes = self.lexicon.drugs[drug].genes
+        gene = next((g for g in genes if g in genotypes), None)
+        if gene:
+            return gene, genotypes[gene]
+        if bare:
+            return genes[0], bare
+        return None
+
+    @staticmethod
+    def _retrieval_plan(gene, genotype, drug, context, cfg, query, resolution) -> tuple[str, dict | None]:
+        if cfg.use_kg and resolution is not None:
+            phenotype = resolution.phenotype
+            return (
+                f"{gene} {resolution.genotype} {phenotype} {drug} {context}".strip(),
+                {"gene": gene, "drug": drug, "phenotype": phenotype},
+            )
+        return (query or f"{genotype} {drug} {context}".strip()), None
+
+    def trace(self, text: str, cfg: RetrievalConfig | None = None) -> dict:
+        """Explain what the pipeline does for a query without generating an answer: entities,
+        genotype translation, the retrieval query/filters, per-chunk scores and the graph path."""
+        cfg = cfg or self.default_config()
+        genotypes = parse_genotypes(text, self.lexicon)
+        bare = None if genotypes else _genotype_in(text)
+        out: dict = {"genotypes": genotypes, "drugs": [], "config": cfg.label}
+        for drug_name in self.lexicon.find_drugs(text):
+            item: dict = {"drug": drug_name, "steps": []}
+            out["drugs"].append(item)
+            selected = self._select_gene(drug_name, genotypes, bare)
+            if selected is None:
+                item["error"] = f"No {'/'.join(self.lexicon.drugs[drug_name].genes)} genotype was provided."
+                continue
+            gene, genotype = selected
+            item.update(gene=gene, genotype=genotype)
+            if not self.graph.covers(gene, drug_name):
+                item["error"] = f"No guideline evidence for {gene}-{drug_name} is indexed."
+                continue
+            resolution = None
+            if cfg.use_kg:
+                try:
+                    resolution = resolve(self.lexicon.genes[gene], genotype)
+                except GenotypeError as exc:
+                    item["error"] = str(exc)
+                    continue
+                item["resolution"] = {
+                    "genotype": resolution.genotype, "phenotypes": resolution.phenotypes,
+                    "activity_score": resolution.activity_score,
+                    "activity_lower_bound": resolution.activity_lower_bound,
+                    "ambiguous": resolution.ambiguous, "explanation": resolution.explanation,
+                }
+                if resolution.ambiguous:
+                    item["error"] = resolution.explanation
+                    continue
+            query, filters = self._retrieval_plan(gene, genotype, drug_name, text, cfg, text, resolution)
+            used = cfg
+            if cfg.rerank and not self.reranker_available():
+                used = replace(cfg, rerank=False)
+                item["note"] = "Reranker unavailable; skipped."
+            item.update(query=query, filters=filters)
+            item["retrieved"] = [
+                {
+                    "rank": r.rank, "chunk_id": r.chunk.id, "dense": round(r.dense, 4), "bm25": round(r.bm25, 4),
+                    "hybrid": round(r.hybrid, 4), "rerank": None if r.rerank is None else round(r.rerank, 4),
+                    "type": r.chunk.metadata.get("type"), "phenotype": r.chunk.metadata.get("phenotype"),
+                    "heading": r.chunk.metadata.get("heading"), "text": r.chunk.text.split("\n", 1)[-1],
+                }
+                for r in self.retriever.retrieve(query, used, filters)
+            ]
+            phenotype = resolution.phenotype if resolution else None
+            nodes = [f"gene:{gene}", f"drug:{drug_name}"]
+            if phenotype:
+                nodes.insert(1, f"phenotype:{gene}:{phenotype}")
+            item["graph_path"] = nodes
+            item["expanded"] = self.graph.evidence_for(gene, drug_name, phenotype) if cfg.use_kg else []
+        return out
+
     def _recommend_one(self, drug_name: str, genotypes: dict[str, str], bare: str | None, context: str,
                        cfg: RetrievalConfig, query: str | None) -> DrugRecommendation:
         t0 = time.perf_counter()
@@ -121,14 +198,10 @@ class PharmaGenePipeline:
         if drug is None:
             return self._abstain(rec, f"'{rec.drug}' is not covered by the knowledge base.", t0)
 
-        genes = self.lexicon.drugs[drug].genes
-        gene = next((g for g in genes if g in genotypes), None)
-        if gene:
-            genotype = genotypes[gene]
-        elif bare:
-            gene, genotype = genes[0], bare
-        else:
-            return self._abstain(rec, f"No {'/'.join(genes)} genotype was provided for {drug}.", t0)
+        selected = self._select_gene(drug, genotypes, bare)
+        if selected is None:
+            return self._abstain(rec, f"No {'/'.join(self.lexicon.drugs[drug].genes)} genotype was provided for {drug}.", t0)
+        gene, genotype = selected
         rec.gene, rec.genotype = gene, genotype
         if not self.graph.covers(gene, drug):
             return self._abstain(rec, f"No guideline evidence for {gene}-{drug} is indexed.", t0)
@@ -145,12 +218,7 @@ class PharmaGenePipeline:
             rec.genotype, phenotype = resolution.genotype, resolution.phenotype
             rec.phenotype = phenotype
 
-        if cfg.use_kg:
-            retrieval_query = f"{gene} {resolution.genotype} {phenotype} {drug} {context}".strip()
-            filters = {"gene": gene, "drug": drug, "phenotype": phenotype}
-        else:
-            retrieval_query = query or f"{genotype} {drug} {context}".strip()
-            filters = None
+        retrieval_query, filters = self._retrieval_plan(gene, genotype, drug, context, cfg, query, resolution)
         if cfg.rerank and not self.reranker_available():
             cfg = replace(cfg, rerank=False)
             rec.notes.append("Reranker unavailable (sentence-transformers not installed); reranking skipped.")

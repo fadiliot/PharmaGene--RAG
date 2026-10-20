@@ -76,10 +76,20 @@ pip install -e ".[local]"          # sentence-transformers + faiss-cpu (embeddin
 pharmagene serve          # then open http://127.0.0.1:8000
 ```
 
-A dependency-free frontend (`src/pharmagene/web/`) served by the FastAPI app: free-text and structured
-queries, per-drug cards with action, phenotype, clickable citations, evidence, confidence breakdown against
-the abstention threshold, and clear abstain / clinician-review states. No CDN or external fonts, so it works
-air-gapped.
+A dependency-free, single-page frontend (`src/pharmagene/web/`, plain ES modules, no CDN or external fonts, so it
+works air-gapped) served by the FastAPI app, in light and dark themes:
+
+| View | What it shows |
+|---|---|
+| **Assistant** | chat-style thread; free-text or structured input; per-drug cards with action, phenotype, clickable citations, evidence and a confidence breakdown against the abstention threshold; clear abstain / clinician-review states |
+| **Pipeline trace** | what happens before generation: entity linking, deterministic genotype translation, the retrieval query and filters, per-chunk dense / BM25 / hybrid scores, and the graph path. Deep link: `#/trace?q=...` |
+| **Knowledge graph** | interactive gene - phenotype - drug graph (layered or force layout, optional guideline chunks, search, drag, zoom, node details, table view). Recommendation edges carry the action as colour and line style. "Show in knowledge graph" from a trace highlights that query's path |
+| **Evaluation** | retrieval ablation chart and table (runnable live), end-to-end metrics, abstention-threshold calibration curve |
+| **Corpus** | every indexed chunk with its metadata; filter and read the text |
+
+Query and trace endpoints: `POST /ask`, `/recommend`, `/trace`; data: `GET /graph`, `/corpus`, `/results`, `/meta`;
+`POST /eval/retrieval` re-runs the retrieval ablation. With `PHARMAGENE_API_KEYS` set, everything except `/health`
+and `/meta` needs an `X-API-Key` header (enter it under the sliders icon in the UI).
 
 ## Commands
 

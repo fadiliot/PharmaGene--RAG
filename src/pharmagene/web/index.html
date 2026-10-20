@@ -8,72 +8,51 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">
+    <a class="brand" href="#/assistant" aria-label="PharmaGene-RAG home">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 3c0 6 10 6 10 12M17 3c0 6-10 6-10 12M8.2 6.5h7.6M7.9 10.5h8.2M8.2 14.5h7.6M7 21c0-3 .8-4.5 2-6M17 21c0-3-.8-4.5-2-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
       <span>PharmaGene<span class="dim">-RAG</span></span>
+    </a>
+    <nav class="nav" aria-label="Views">
+      <a href="#/assistant" data-route="assistant">Assistant</a>
+      <a href="#/trace" data-route="trace">Pipeline trace</a>
+      <a href="#/graph" data-route="graph">Knowledge graph</a>
+      <a href="#/evaluation" data-route="evaluation">Evaluation</a>
+      <a href="#/corpus" data-route="corpus">Corpus</a>
+    </nav>
+    <div class="top-actions">
+      <div class="status" id="status" aria-live="polite">Connecting…</div>
+      <button class="icon-btn" id="theme-btn" type="button" title="Toggle light / dark" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" id="settings-btn" type="button" title="Retrieval settings" aria-label="Retrieval settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10M14 7a2 2 0 1 0 4 0 2 2 0 0 0-4 0ZM6 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
-    <div class="status" id="status" aria-live="polite">Connecting…</div>
   </header>
 
-  <main class="layout">
-    <section class="panel input-panel" aria-label="Query">
-      <div class="tabs" role="tablist">
-        <button class="tab active" role="tab" data-tab="ask" aria-selected="true">Free text</button>
-        <button class="tab" role="tab" data-tab="structured" aria-selected="false">Structured</button>
-      </div>
-
-      <form id="form-ask" class="form" autocomplete="off">
-        <label for="ask-text">Clinical question</label>
-        <textarea id="ask-text" rows="4" placeholder="e.g. Patient with CYP2C19 *2/*2 genotype prescribed clopidogrel following PCI."></textarea>
-        <div class="examples">
-          <span class="hint">Try:</span>
-          <button type="button" class="chip" data-example="Patient with CYP2C19 *2/*2 genotype prescribed clopidogrel following percutaneous coronary intervention.">CYP2C19 *2/*2 · clopidogrel</button>
-          <button type="button" class="chip" data-example="Patient carries the SLCO1B1 c.521T>C variant (heterozygous) and is being evaluated for simvastatin.">SLCO1B1 c.521T&gt;C</button>
-          <button type="button" class="chip" data-example="CYP2D6 *1xN/*1, considering codeine for postoperative pain.">CYP2D6 *1xN/*1 · codeine</button>
-          <button type="button" class="chip" data-example="CYP2D6 *1xN/*4, considering codeine for postoperative pain.">Ambiguous copy number</button>
-          <button type="button" class="chip" data-example="CYP2C19 *2/*2 considering warfarin.">Unsupported drug</button>
-        </div>
-        <button class="primary" type="submit">Get recommendation</button>
-      </form>
-
-      <form id="form-structured" class="form hidden" autocomplete="off">
-        <label for="s-genotype">Genotype</label>
-        <input id="s-genotype" type="text" placeholder="CYP2C19 *2/*2; DPYD *1/*2A">
-        <label for="s-drugs">Medications <span class="hint">(comma-separated)</span></label>
-        <input id="s-drugs" type="text" list="drug-list" placeholder="clopidogrel, capecitabine">
-        <datalist id="drug-list"></datalist>
-        <label for="s-context">Clinical context <span class="hint">(optional)</span></label>
-        <input id="s-context" type="text" placeholder="after percutaneous coronary intervention">
-        <button class="primary" type="submit">Get recommendation</button>
-      </form>
-
-      <details class="settings">
-        <summary>Retrieval settings</summary>
-        <div class="grid2">
-          <label for="opt-mode">Retrieval mode</label>
-          <select id="opt-mode">
-            <option value="hybrid" selected>Hybrid (dense + BM25)</option>
-            <option value="dense">Dense only</option>
-            <option value="bm25">BM25 only</option>
-          </select>
-          <label class="check"><input type="checkbox" id="opt-kg" checked> Knowledge-graph phenotype + filters</label>
-          <label class="check"><input type="checkbox" id="opt-rerank"> Cross-encoder rerank</label>
-          <label for="opt-key">API key</label>
-          <input id="opt-key" type="password" placeholder="only if the server requires one" autocomplete="off">
-        </div>
-      </details>
-    </section>
-
-    <section class="results" id="results" aria-live="polite">
-      <div class="empty">
-        <h2>Evidence-grounded pharmacogenomic guidance</h2>
-        <p>Enter a genotype and a medication. Every recommendation cites its guideline source, or the system abstains and flags the case for a clinician.</p>
-      </div>
-    </section>
-  </main>
+  <main id="view" class="view" tabindex="-1"></main>
 
   <footer class="footer">Research prototype. Not a medical device. Recommendations must be verified by a qualified clinician against current guidelines before any clinical use.</footer>
 
-  <script src="/static/app.js"></script>
+  <dialog id="settings">
+    <form method="dialog" class="settings-form">
+      <h2>Retrieval settings</h2>
+      <p class="hint">Applied to the Assistant and the Pipeline trace.</p>
+      <label for="opt-mode">Retrieval mode</label>
+      <select id="opt-mode">
+        <option value="hybrid">Hybrid (dense + BM25)</option>
+        <option value="dense">Dense only</option>
+        <option value="bm25">BM25 only</option>
+      </select>
+      <label class="check"><input type="checkbox" id="opt-kg"> Knowledge-graph phenotype, filters and expansion</label>
+      <label class="check"><input type="checkbox" id="opt-rerank"> Cross-encoder rerank <span class="hint" id="rerank-note"></span></label>
+      <label for="opt-key">API key</label>
+      <input id="opt-key" type="password" placeholder="only if the server requires one" autocomplete="off">
+      <div class="dialog-actions"><button class="primary" value="close">Done</button></div>
+    </form>
+  </dialog>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <script type="module" src="/static/main.js"></script>
 </body>
 </html>

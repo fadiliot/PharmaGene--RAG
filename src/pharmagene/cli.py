@@ -129,7 +129,7 @@ def cmd_eval_retrieval(args) -> int:
     pipeline = _build_pipeline(args)
     scenarios = _load_or_build_scenarios(pipeline, Path(args.scenarios), None, 0)
     rows = run_retrieval_ablation(pipeline, scenarios)
-    write_json(rows, Path(args.out))
+    write_json({"embedder": pipeline.retriever.embedder.name, "n_scenarios": len(scenarios), "rows": rows}, Path(args.out))
     print(f"Embedder: {pipeline.retriever.embedder.name}\n")
     print(to_markdown(rows))
     return 0
@@ -141,7 +141,9 @@ def cmd_eval_e2e(args) -> int:
     pipeline = _build_pipeline(args)
     scenarios = _load_or_build_scenarios(pipeline, Path(args.scenarios), args.limit, args.seed)
     metrics, rows = run_e2e(pipeline, scenarios, args.systems.split(","))
-    write_json({"metrics": metrics, "rows": rows}, Path(args.out))
+    write_json({"llm": pipeline.llm.name if pipeline.llm else "none",
+                "embedder": pipeline.retriever.embedder.name, "n_scenarios": len(scenarios),
+                "metrics": metrics, "rows": rows}, Path(args.out))
     for system, r in rows.items():
         export_for_rating(r, Path(args.out).with_name(f"ratings_{system}.csv"))
     print(f"LLM: {pipeline.llm.name if pipeline.llm else 'none'}; embedder: {pipeline.retriever.embedder.name}; "
@@ -156,6 +158,7 @@ def cmd_calibrate(args) -> int:
     pipeline = _build_pipeline(args)
     scenarios = _load_or_build_scenarios(pipeline, Path(args.scenarios), None, 0)
     result = calibrate_tau(pipeline, scenarios, args.target_accuracy)
+    result["embedder"] = pipeline.retriever.embedder.name
     write_json(result, Path(args.out))
     print(to_markdown(result["table"]))
     print(f"\nscored {result['n_scored']} scenarios; suggested tau for accuracy >= "
