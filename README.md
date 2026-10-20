@@ -104,23 +104,6 @@ it is chunked by heading and tagged with the lexicon. Add new genes and drugs in
 and `data/kb/drugs.json`. PharmGKB, FDA label and KNMP content each have their own licence terms; this
 repo ships none of it.
 
-## Deviations from the paper, and what is not reproduced
-
-- **LLM:** the paper uses Llama 3.1; this repo defaults to Gemini and supports Ollama (Llama 3.1) for local runs.
-- **Sources:** the paper cites CPIC, PharmGKB, FDA and KNMP. The seed corpus covers only CPIC-style summaries of
-  CYP2C19-clopidogrel, SLCO1B1-simvastatin, TPMT-thiopurines, DPYD-fluoropyrimidines and CYP2D6-codeine.
-- **Unspecified in the paper, chosen here:** score normalisation (min-max), alpha = 0.5, the confidence formula
-  and its weights, tau = 0.5. All are configurable and tau should be calibrated on your own data.
-- **No numbers are carried over.** Table I of the paper, the resume figures and the slide claims are not
-  produced by this code. Numbers from `eval-*` depend on the embedder and the corpus. Evaluation labels here
-  are derived from the same corpus and rules the system uses, so they test plumbing and robustness, not clinical
-  validity; run with real embeddings and add clinician-written scenarios before quoting anything. Only cite
-  figures you have measured.
-- **Verifier limits:** support checking is lexical. It catches added numbers, drugs, phenotypes and unsupported
-  sentences, but it cannot detect a wrong guideline or a paraphrase that distorts meaning.
-- **Security:** the audit log omits raw genotypes by default. Encryption at rest, network isolation and RBAC
-  beyond an API key are deployment concerns this repo does not implement.
-
 ## Layout
 
 ```
