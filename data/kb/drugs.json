@@ -1,0 +1,37 @@
+{
+  "clopidogrel": {
+    "aliases": ["Plavix"],
+    "genes": ["CYP2C19"],
+    "typical_context": "after percutaneous coronary intervention for acute coronary syndrome"
+  },
+  "simvastatin": {
+    "aliases": ["Zocor"],
+    "genes": ["SLCO1B1"],
+    "typical_context": "for primary prevention of cardiovascular disease"
+  },
+  "azathioprine": {
+    "aliases": ["Imuran"],
+    "genes": ["TPMT"],
+    "typical_context": "for inflammatory bowel disease"
+  },
+  "mercaptopurine": {
+    "aliases": ["6-MP", "Purinethol", "6-mercaptopurine"],
+    "genes": ["TPMT"],
+    "typical_context": "for acute lymphoblastic leukemia maintenance therapy"
+  },
+  "fluorouracil": {
+    "aliases": ["5-FU", "5FU", "Adrucil"],
+    "genes": ["DPYD"],
+    "typical_context": "for colorectal cancer chemotherapy"
+  },
+  "capecitabine": {
+    "aliases": ["Xeloda"],
+    "genes": ["DPYD"],
+    "typical_context": "for colorectal cancer chemotherapy"
+  },
+  "codeine": {
+    "aliases": [],
+    "genes": ["CYP2D6"],
+    "typical_context": "for postoperative pain"
+  }
+}

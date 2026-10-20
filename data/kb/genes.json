@@ -1,0 +1,96 @@
+{
+  "CYP2C19": {
+    "aliases": ["CYP2C19", "2C19"],
+    "model": "function_pair",
+    "alleles": {
+      "*1": {"function": "normal_function"},
+      "*2": {"function": "no_function"},
+      "*3": {"function": "no_function"},
+      "*17": {"function": "increased_function"}
+    },
+    "pair_rules": [
+      {"functions": ["normal_function", "normal_function"], "phenotype": "Normal Metabolizer"},
+      {"functions": ["normal_function", "increased_function"], "phenotype": "Rapid Metabolizer"},
+      {"functions": ["increased_function", "increased_function"], "phenotype": "Ultrarapid Metabolizer"},
+      {"functions": ["normal_function", "no_function"], "phenotype": "Intermediate Metabolizer"},
+      {"functions": ["increased_function", "no_function"], "phenotype": "Intermediate Metabolizer"},
+      {"functions": ["no_function", "no_function"], "phenotype": "Poor Metabolizer"}
+    ]
+  },
+  "SLCO1B1": {
+    "aliases": ["SLCO1B1", "OATP1B1"],
+    "model": "function_pair",
+    "alleles": {
+      "*1": {"function": "normal_function"},
+      "*5": {"function": "decreased_function"},
+      "*15": {"function": "decreased_function"}
+    },
+    "allele_aliases": {"c.521T>C": "*5", "521T>C": "*5"},
+    "pair_rules": [
+      {"functions": ["normal_function", "normal_function"], "phenotype": "Normal Function"},
+      {"functions": ["normal_function", "decreased_function"], "phenotype": "Decreased Function"},
+      {"functions": ["decreased_function", "decreased_function"], "phenotype": "Poor Function"}
+    ]
+  },
+  "TPMT": {
+    "aliases": ["TPMT"],
+    "model": "function_pair",
+    "alleles": {
+      "*1": {"function": "normal_function"},
+      "*2": {"function": "no_function"},
+      "*3A": {"function": "no_function"},
+      "*3B": {"function": "no_function"},
+      "*3C": {"function": "no_function"},
+      "*4": {"function": "no_function"}
+    },
+    "pair_rules": [
+      {"functions": ["normal_function", "normal_function"], "phenotype": "Normal Metabolizer"},
+      {"functions": ["normal_function", "no_function"], "phenotype": "Intermediate Metabolizer"},
+      {"functions": ["no_function", "no_function"], "phenotype": "Poor Metabolizer"}
+    ]
+  },
+  "DPYD": {
+    "aliases": ["DPYD", "DPD"],
+    "model": "activity_score",
+    "alleles": {
+      "*1": {"function": "normal_function", "activity": 1.0},
+      "*2A": {"function": "no_function", "activity": 0.0},
+      "*13": {"function": "no_function", "activity": 0.0},
+      "c.2846A>T": {"function": "decreased_function", "activity": 0.5},
+      "c.1129-5923C>G": {"function": "decreased_function", "activity": 0.5}
+    },
+    "allele_aliases": {
+      "c.1905+1G>A": "*2A",
+      "c.1679T>G": "*13",
+      "HapB3": "c.1129-5923C>G"
+    },
+    "bands": [
+      {"phenotype": "Poor Metabolizer", "min": 0.0, "max": 0.5, "label": "0 to 0.5"},
+      {"phenotype": "Intermediate Metabolizer", "min": 1.0, "max": 1.5, "label": "1 to 1.5"},
+      {"phenotype": "Normal Metabolizer", "min": 2.0, "max": 2.0, "label": "2"}
+    ]
+  },
+  "CYP2D6": {
+    "aliases": ["CYP2D6", "2D6"],
+    "model": "activity_score",
+    "alleles": {
+      "*1": {"function": "normal_function", "activity": 1.0},
+      "*2": {"function": "normal_function", "activity": 1.0},
+      "*3": {"function": "no_function", "activity": 0.0},
+      "*4": {"function": "no_function", "activity": 0.0},
+      "*5": {"function": "no_function", "activity": 0.0},
+      "*6": {"function": "no_function", "activity": 0.0},
+      "*9": {"function": "decreased_function", "activity": 0.5},
+      "*10": {"function": "decreased_function", "activity": 0.25},
+      "*17": {"function": "decreased_function", "activity": 0.5},
+      "*41": {"function": "decreased_function", "activity": 0.25}
+    },
+    "duplicable": ["*1", "*2", "*10", "*41"],
+    "bands": [
+      {"phenotype": "Poor Metabolizer", "min": 0.0, "max": 0.0, "label": "0"},
+      {"phenotype": "Intermediate Metabolizer", "min": 0.25, "max": 1.0, "label": "0.25 to 1.0"},
+      {"phenotype": "Normal Metabolizer", "min": 1.25, "max": 2.25, "label": "1.25 to 2.25"},
+      {"phenotype": "Ultrarapid Metabolizer", "min": 2.5, "max": null, "label": "greater than 2.25"}
+    ]
+  }
+}

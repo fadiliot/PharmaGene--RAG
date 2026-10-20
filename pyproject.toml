@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pharmagene"
+version = "0.1.0"
+description = "PharmaGene-RAG: evidence-grounded pharmacogenomic decision support (hybrid retrieval, reranking, citation enforcement, confidence-based abstention)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "networkx>=3.2",
+    "pydantic>=2.5",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+gemini = ["google-genai>=1.0"]
+local = ["sentence-transformers>=3.0", "faiss-cpu>=1.8"]
+pdf = ["pypdf>=4.0"]
+api = ["fastapi>=0.110", "uvicorn>=0.29"]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[project.scripts]
+pharmagene = "pharmagene.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
